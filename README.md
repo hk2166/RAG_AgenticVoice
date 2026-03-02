@@ -1,220 +1,171 @@
-#  RealTime Voice Agent
+# 🎙 Real-Time Voice RAG Agent
 
-A modular, deployable Voice-Based Retrieval-Augmented Generation (RAG) system powered by Gemini.
+A functional **Real-Time Voice Retrieval-Augmented Generation (RAG) Agent** built to:
 
-> **Accepts queries → Retrieves context → Generates grounded responses → Responds in custom voice**
+- 🎤 Listen to a spoken question
+- 📚 Retrieve relevant context from a knowledge base (PDF)
+- 🧠 Generate a grounded answer using Gemini
+- 🔊 Respond back in voice
 
----
+This project fulfills the assignment requirements for:
 
-##  Features
-
-| Status | Feature                                          |
-| ------ | ------------------------------------------------ |
-| ✅     | Gemini 1.5 Flash for reasoning                   |
-| ✅     | Gemini embeddings (`text-embedding-004`)         |
-| ✅     | FAISS vector index                               |
-| ✅     | ElevenLabs voice synthesis (voice cloning ready) |
-| ✅     | Modular architecture (STT, RAG, Agent, TTS)      |
-| ✅     | Dockerized & deployment ready                    |
-| 🔜     | STT integration (Deepgram / Gemini audio)        |
-| 🔜     | Persistent DB (Supabase / pgvector)              |
-| 🔜     | Streaming WebSocket support                      |
+- STT (Speech-to-Text)
+- RAG Engine
+- Orchestration Logic
+- TTS (Text-to-Speech)
+- Low latency interaction
 
 ---
 
-##  Architecture
+## 🚀 Tech Stack
 
-```
-┌─────────────────────────────────────────────────────┐
-│                      Client                         │
-└─────────────────────┬───────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│                 FastAPI Backend                     │
-└─────────────────────┬───────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│              Agent Orchestrator                     │
-│  ┌────────────────┬────────────────┬──────────────┐ │
-│  │   Retrieval    │   Gemini LLM   │     TTS      │ │
-│  │ FAISS + Gemini │   1.5 Flash    │  ElevenLabs  │ │
-│  └────────────────┴────────────────┴──────────────┘ │
-└─────────────────────┬───────────────────────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────┐
-│                 Audio Response                      │
-└─────────────────────────────────────────────────────┘
-```
-
-**Future Upgrades:**
-
-- FAISS → pgvector
-- ElevenLabs → Local TTS
-- WebSocket streaming
-- Persistent conversation memory
-- Domain fine-tuning
+- **FastAPI** – Backend API
+- **Faster-Whisper** – Local Speech-to-Text
+- **Gemini 1.5 Flash** – LLM Reasoning
+- **Gemini Embeddings (`text-embedding-004`)** – Vector embeddings
+- **FAISS** – Vector similarity search
+- **Edge-TTS** – Text-to-Speech
 
 ---
 
-##  Project Structure
+## ✅ Features
+
+| Status | Feature                               |
+| ------ | ------------------------------------- |
+| ✅     | Local Speech-to-Text (Faster-Whisper) |
+| ✅     | Gemini reasoning (1.5 Flash)          |
+| ✅     | Gemini embeddings                     |
+| ✅     | FAISS vector index                    |
+| ✅     | Edge-TTS voice output                 |
+| ✅     | Modular architecture                  |
+| ✅     | Low-latency backend                   |
+| ❌     | Voice cloning (not implemented)       |
+| ❌     | Streaming WebSocket (not implemented) |
+
+---
+
+## 🏗 Architecture
 
 ```
-RealTime-Voice-Agent/
+Microphone Input
+       ↓
+Faster-Whisper (STT)
+       ↓
+   Text Query
+       ↓
+FAISS Retrieval (Gemini Embeddings)
+       ↓
+Gemini 1.5 Flash (Grounded Response)
+       ↓
+    Edge-TTS
+       ↓
+Spoken Audio Response
+```
+
+This matches the required pipeline:
+
+**STT → RAG → Orchestration → TTS**
+
+---
+
+## 📂 Project Structure
+
+```
+GPU/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI entry point
-│   │   ├── config.py            # Environment configuration
-│   │   ├── dependencies.py      # Shared dependencies
-│   │   │
-│   │   ├── agent/
-│   │   │   └── orchestrator.py  # Gemini agent logic
-│   │   │
-│   │   ├── db/
-│   │   │   └── models.py        # Database models
-│   │   │
-│   │   ├── rag/
-│   │   │   ├── embeddings.py    # Gemini embeddings
-│   │   │   ├── ingest.py        # Document ingestion
-│   │   │   └── retriever.py     # FAISS retrieval
-│   │   │
+│   │   ├── main.py
+│   │   ├── config.py
+│   │   ├── ingestion/
+│   │   │   └── ingest.py
+│   │   ├── retrieval/
+│   │   │   └── retrieve.py
+│   │   ├── llm/
+│   │   │   └── generate.py
 │   │   ├── stt/
-│   │   │   └── provider.py      # Speech-to-text provider
-│   │   │
+│   │   │   └── whisper_provider.py
 │   │   ├── tts/
-│   │   │   └── provider.py      # ElevenLabs TTS
-│   │   │
+│   │   │   └── edge_tts_provider.py
 │   │   └── routes/
-│   │       ├── voice.py         # Voice endpoint
-│   │       ├── documents.py     # Document management
-│   │       └── users.py         # User management
-│   │
-│   └── requirement.txt
-│
-├── frontend/                     # (Coming soon)
-├── .gitignore
+│   │       └── voice.py
+│   ├── data/
+│   │   └── (place your PDF files here)
+│   └── .env
+├── frontend/
 └── README.md
 ```
 
 ---
 
-##  Setup
+## 🛠 Setup Instructions
 
-### 1. Clone Repository
+### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/hk2166/RealTime-Voice-Agent.git
-cd RealTime-Voice-Agent/backend
+git clone <repository-url>
+cd GPU
 ```
 
-### 2. Create Virtual Environment
+### 2️⃣ Create Virtual Environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 3. Install Dependencies
+### 3️⃣ Install Dependencies
 
 ```bash
-pip install -r requirement.txt
+cd backend
+pip install fastapi uvicorn faster-whisper faiss-cpu edge-tts google-generativeai pypdf python-dotenv python-multipart
 ```
 
-### 4. Configure Environment
+### 4️⃣ Configure Environment Variables
 
-Create `.env` in `backend/`:
+Create a `.env` file in the `backend/` directory:
 
 ```env
-GEMINI_API_KEY=your_gemini_key
-ELEVENLABS_API_KEY=your_elevenlabs_key
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-### 5. Ingest Documents
+### 5️⃣ Ingest PDF (Required Before Running)
+
+Place your PDF file in `backend/data/` and run:
 
 ```python
-from app.rag.ingest import ingest_pdf
-ingest_pdf("sample.pdf")
+from app.ingestion.ingest import ingest_pdf
+ingest_pdf("data/your_document.pdf")
 ```
 
-This generates `faiss_index/` and `metadata.pkl`.
+This generates:
 
-### 6. Run Server
+- `faiss.index`
+- `chunks.pkl`
+
+### 6️⃣ Run the Server
 
 ```bash
+cd backend
 uvicorn app.main:app --reload
 ```
 
-Server: `http://127.0.0.1:8000`
-
 ---
 
-##  Testing
+## 📡 API Usage
 
-### Swagger UI
+### Voice Query Endpoint
 
-```
-http://127.0.0.1:8000/docs
-```
+**POST** `/voice`
 
-**POST `/voice`**
-
-| Field      | Description         |
-| ---------- | ------------------- |
-| `question` | Your query          |
-| `voice_id` | ElevenLabs voice ID |
-
-### cURL
+Upload an audio file to get a spoken response:
 
 ```bash
-curl -X POST "http://127.0.0.1:8000/voice" \
-  -F "question=What is this document about?" \
-  -F "voice_id=YOUR_VOICE_ID" \
-  --output response.mp3
+curl -X POST "http://localhost:8000/voice" \
+  -F "audio=@your_audio.wav"
 ```
 
 ---
 
-##  Docker
+## 📝 License
 
-```bash
-# Build
-docker build -t realtime-voice-agent .
-
-# Run
-docker run -p 8000:8000 realtime-voice-agent
-```
-
----
-
-##  Deployment
-
-| Component | Recommendation    |
-| --------- | ----------------- |
-| Backend   | Railway / Render  |
-| Frontend  | Vercel            |
-| Vector DB | Supabase pgvector |
-| Storage   | Supabase / S3     |
-
----
-
-##  Performance
-
-| Parameter       | Value              |
-| --------------- | ------------------ |
-| Chunk size      | 500 tokens         |
-| Top-k retrieval | 3                  |
-| Model           | gemini-1.5-flash   |
-| Embeddings      | text-embedding-004 |
-
----
-
-## Roadmap
-
-| Phase          | Features                                            |
-| -------------- | --------------------------------------------------- |
-| **Phase 1** | Voice RAG system, Gemini reasoning, ElevenLabs TTS  |
-| **Phase 2** | STT integration, DB persistence, Frontend UI        |
-| **Phase 3** | Agentic tools, Memory layer, Fine-tuning, Streaming |
-
----
-
+MIT License
