@@ -2,10 +2,10 @@
 
 A functional **Real-Time Voice Retrieval-Augmented Generation (RAG) Agent** built to:
 
-- 🎤 Listen to a spoken question
-- 📚 Retrieve relevant context from a knowledge base (PDF)
-- 🧠 Generate a grounded answer using Gemini
-- 🔊 Respond back in voice
+- Listen to a spoken question
+- Retrieve relevant context from a knowledge base (PDF)
+- Generate a grounded answer using Gemini
+- Respond back in voice
 
 This project fulfills the assignment requirements for:
 
@@ -17,7 +17,7 @@ This project fulfills the assignment requirements for:
 
 ---
 
-## 🚀 Tech Stack
+##  Tech Stack
 
 - **FastAPI** – Backend API
 - **Faster-Whisper** – Local Speech-to-Text
@@ -28,7 +28,7 @@ This project fulfills the assignment requirements for:
 
 ---
 
-## ✅ Features
+##  Features
 
 | Status | Feature                               |
 | ------ | ------------------------------------- |
@@ -44,7 +44,7 @@ This project fulfills the assignment requirements for:
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 Microphone Input
@@ -97,7 +97,7 @@ GPU/
 
 ---
 
-## 🛠 Setup Instructions
+##  Setup Instructions
 
 ### 1️⃣ Clone the Repository
 
@@ -155,7 +155,7 @@ uvicorn app.main:app --reload
 
 ---
 
-## 📡 API Usage
+##  API Usage
 
 ### Voice Query Endpoint
 
@@ -168,8 +168,3 @@ curl -X POST "http://localhost:8000/voice" \
   -F "audio=@your_audio.wav"
 ```
 
----
-
-## 📝 License
-
-MIT License
