@@ -1,0 +1,25 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+
+# Environment
+.env
+
+# macOS
+.DS_Store
+
+# Frontend
+node_modules/
+dist/
+build/
+
+# Generated files
+faiss_index
+metadata.pkl
+*.mp3
+backend/data/
