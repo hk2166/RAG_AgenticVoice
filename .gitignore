@@ -19,7 +19,7 @@ dist/
 build/
 
 # Generated files
-faiss_index
-metadata.pkl
+faiss.index
+chunks.pkl
 *.mp3
 backend/data/

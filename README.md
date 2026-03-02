@@ -22,7 +22,7 @@ This project fulfills the assignment requirements for:
 - **FastAPI** – Backend API
 - **Faster-Whisper** – Local Speech-to-Text
 - **Gemini 1.5 Flash** – LLM Reasoning
-- **Gemini Embeddings (`text-embedding-004`)** – Vector embeddings
+- **Gemini Embeddings (`gemini-embedding-001`)** – Vector embeddings
 - **FAISS** – Vector similarity search
 - **Edge-TTS** – Text-to-Speech
 
@@ -88,10 +88,10 @@ GPU/
 │   │   │   └── edge_tts_provider.py
 │   │   └── routes/
 │   │       └── voice.py
-│   ├── data/
-│   │   └── (place your PDF files here)
-│   └── .env
+│   ├── data/           ← gitignored, add your PDFs here
+│   └── .env            ← gitignored, create this locally
 ├── frontend/
+├── venv/               ← gitignored, created by you locally
 └── README.md
 ```
 
@@ -113,6 +113,8 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
+> **Note:** The `venv/` folder is gitignored and must be created locally — never commit it.
+
 ### 3️⃣ Install Dependencies
 
 ```bash
@@ -127,6 +129,8 @@ Create a `.env` file in the `backend/` directory:
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 ```
+
+> **Warning:** `.env` is gitignored and must **never** be committed. Keep your API key private.
 
 ### 5️⃣ Ingest PDF (Required Before Running)
 
