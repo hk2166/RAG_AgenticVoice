@@ -23,3 +23,9 @@ faiss_index
 metadata.pkl
 *.mp3
 backend/data/
+
+# Generated files
+faiss_index
+metadata.pkl
+*.mp3
+backend/data/
