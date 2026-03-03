@@ -88,10 +88,10 @@ GPU/
 │   │   │   └── edge_tts_provider.py
 │   │   └── routes/
 │   │       └── voice.py
-│   ├── data/           ← gitignored, add your PDFs here
-│   └── .env            ← gitignored, create this locally
+│   ├── data/           
+│   └── .env            
 ├── frontend/
-├── venv/               ← gitignored, created by you locally
+├── venv/               
 └── README.md
 ```
 
@@ -110,7 +110,7 @@ cd GPU
 
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  
 ```
 
 > **Note:** The `venv/` folder is gitignored and must be created locally — never commit it.
@@ -120,6 +120,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```bash
 cd backend
 pip install fastapi uvicorn faster-whisper faiss-cpu edge-tts google-generativeai pypdf python-dotenv python-multipart
+pip install -r requirements.txt
 ```
 
 ### 4️⃣ Configure Environment Variables
