@@ -104,6 +104,7 @@ GPU/
 ```bash
 git clone <repository-url>
 cd GPU
+pip install -r requirements.txt
 ```
 
 ### 2️⃣ Create Virtual Environment
@@ -120,7 +121,7 @@ source venv/bin/activate
 ```bash
 cd backend
 pip install fastapi uvicorn faster-whisper faiss-cpu edge-tts google-generativeai pypdf python-dotenv python-multipart
-pip install -r requirements.txt
+
 ```
 
 ### 4️⃣ Configure Environment Variables
