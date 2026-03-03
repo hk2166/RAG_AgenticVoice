@@ -31,7 +31,7 @@ async def voice_query(audio: UploadFile = File(...)):
     return Response(content=audio_response, media_type="audio/mpeg")
 
 
-@router.get("/voice/text")
+@router.post("/voice/text")
 async def voice_query_text(audio: UploadFile = File(...)):
     """Debug endpoint — returns JSON with transcript and answer instead of audio."""
     audio_bytes = await audio.read()

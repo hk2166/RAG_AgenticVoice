@@ -12,6 +12,10 @@ async def generate_answer(question: str) -> str:
     docs = retrieve(question, k=3)
     context = "\n\n".join(d["chunk"] for d in docs)
 
+    print("\n--- RETRIEVED CHUNKS ---")
+    for i, doc in enumerate(docs):
+        print(f"\nChunk {i+1}:\n{doc['chunk'][:300]}")
+
     #  Build grounded prompt
     prompt = f"""You are a document-based assistant.
 
@@ -32,7 +36,7 @@ Question:
         contents=prompt,
     )
 
-
+    
     return response.text
 
 
