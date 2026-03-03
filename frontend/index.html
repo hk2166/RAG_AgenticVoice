@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice RAG Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Background orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <div class="app-wrapper">
+      <!-- Header -->
+      <header class="app-header">
+        <div class="header-icon">
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Voice RAG Agent</h1>
+          <p>Powered by Gemini &amp; Whisper</p>
+        </div>
+        <div class="header-controls">
+          <label class="toggle-label" title="Toggle subtitles">
+            <input type="checkbox" id="subtitleToggle" checked />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">Subtitles</span>
+          </label>
+        </div>
+      </header>
+
+      <!-- Conversation area -->
+      <main class="conversation-area" id="conversationArea">
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              />
+            </svg>
+          </div>
+          <p>Press the mic to start talking</p>
+          <span>Your conversation will appear here</span>
+        </div>
+      </main>
+
+      <!-- Status bar -->
+      <div class="status-bar">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-text" id="statusText">Ready</span>
+      </div>
+
+      <!-- Mic control -->
+      <footer class="mic-footer">
+        <div class="waveform" id="waveform">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <button class="mic-btn" id="recordBtn" aria-label="Start recording">
+          <span class="mic-ring"></span>
+          <span class="mic-ring mic-ring-2"></span>
+          <svg
+            class="mic-icon"
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+          <svg
+            class="stop-icon"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <rect x="4" y="4" width="16" height="16" rx="3" />
+          </svg>
+        </button>
+        <p class="mic-hint" id="micHint">Hold to record, click to toggle</p>
+      </footer>
+    </div>
+
+    <!-- Hidden audio player -->
+    <audio id="audioPlayer" style="display: none"></audio>
+
+    <script src="script.js"></script>
+  </body>
+</html>
