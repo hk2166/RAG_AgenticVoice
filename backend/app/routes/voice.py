@@ -15,7 +15,7 @@ async def voice_query(audio: UploadFile = File(...)):
       1. Transcribe audio (STT)
       2. Retrieve relevant chunks + generate answer (RAG)
       3. Convert answer to speech (TTS)
-      4. Return audio bytes
+      4. Return audio bytes + transcription/answer as response headers
     """
     audio_bytes = await audio.read()
 
@@ -28,7 +28,14 @@ async def voice_query(audio: UploadFile = File(...)):
     # TTS
     audio_response = await text_to_speech(answer)
 
-    return Response(content=audio_response, media_type="audio/mpeg")
+    return Response(
+        content=audio_response,
+        media_type="audio/mpeg",
+        headers={
+            "X-Transcription": question.strip().replace("\n", " "),
+            "X-Response-Text": answer.strip().replace("\n", " "),
+        },
+    )
 
 
 @router.post("/voice/text")

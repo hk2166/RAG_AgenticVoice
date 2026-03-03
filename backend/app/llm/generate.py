@@ -17,9 +17,18 @@ async def generate_answer(question: str) -> str:
         print(f"\nChunk {i+1}:\n{doc['chunk'][:300]}")
 
     #  Build grounded prompt
-    prompt = f"""You are a document-based assistant.
+    prompt = f"""
+You are a document-based assistant.
 
 Answer ONLY using the context below.
+
+When listing projects:
+- Return only project names.
+- Do NOT include links.
+- Do NOT include (Github) or (Demo).
+- Do NOT include URLs.
+- Keep formatting clean and minimal.
+
 If the answer is not in the context, say:
 "I cannot find that information in the document."
 

@@ -1,75 +1,486 @@
-const recordBtn = document.getElementById("recordBtn");
-const subtitleDiv = document.getElementById("subtitle");
-const responseDiv = document.getElementById("responseText");
-const audioPlayer = document.getElementById("audioPlayer");
-const subtitleToggle = document.getElementById("subtitleToggle");
+// ── DOM refs ──────────────────────────────────────────────
+const recordBtn        = document.getElementById("recordBtn");
+const audioPlayer      = document.getElementById("audioPlayer");
+const subtitleToggle   = document.getElementById("subtitleToggle");
+const conversationArea = document.getElementById("conversationArea");
+const emptyState       = document.getElementById("emptyState");
+const statusDot        = document.getElementById("statusDot");
+const statusText       = document.getElementById("statusText");
+const waveform         = document.getElementById("waveform");
+
+// Upload zone refs
+const uploadZone         = document.getElementById("uploadZone");
+const fileInput          = document.getElementById("fileInput");
+const uploadBtn          = document.getElementById("uploadBtn");
+const replaceBtn         = document.getElementById("replaceBtn");
+const uploadIdle         = document.getElementById("uploadIdle");
+const uploadProgress     = document.getElementById("uploadProgress");
+const uploadProgressText = document.getElementById("uploadProgressText");
+const uploadLoaded       = document.getElementById("uploadLoaded");
+const docName            = document.getElementById("docName");
+const docMeta            = document.getElementById("docMeta");
 
 let mediaRecorder;
-let audioChunks = [];
+let audioChunks  = [];
+let docLoaded    = false;
 
+// ── Upload zone ───────────────────────────────────────────
+
+function setUploadState(state, info = {}) {
+  uploadIdle.style.display     = state === "idle"     ? "flex" : "none";
+  uploadProgress.style.display = state === "progress" ? "flex" : "none";
+  uploadLoaded.style.display   = state === "loaded"   ? "flex" : "none";
+
+  uploadZone.classList.toggle("loaded", state === "loaded");
+
+  if (state === "loaded") {
+    docName.textContent = info.filename || "document.pdf";
+    docMeta.textContent = `${info.pages ?? "?"} pages · ${info.chunks ?? "?"} chunks indexed`;
+    docLoaded = true;
+  } else {
+    docLoaded = false;
+  }
+
+  // Enable mic only when a doc is loaded
+  recordBtn.disabled = !docLoaded;
+  document.getElementById("micHint").textContent = docLoaded
+    ? "Click to start recording"
+    : "Upload a PDF document first";
+}
+
+async function handleFileUpload(file) {
+  if (!file || !file.name.toLowerCase().endsWith(".pdf")) {
+    showToast("Please choose a PDF file.");
+    return;
+  }
+
+  setUploadState("progress");
+  uploadProgressText.textContent = "Uploading…";
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    uploadProgressText.textContent = "Chunking & embedding (this may take ~30s)…";
+    const res = await fetch("/ingest", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Ingestion failed");
+    }
+
+    setUploadState("loaded", data);
+    showToast("✓ Document indexed successfully!", "success");
+  } catch (err) {
+    setUploadState("idle");
+    showToast("Error: " + err.message);
+    console.error(err);
+  }
+}
+
+// Click to pick file
+uploadBtn.onclick  = () => fileInput.click();
+replaceBtn.onclick = () => fileInput.click();
+fileInput.onchange = () => {
+  if (fileInput.files[0]) handleFileUpload(fileInput.files[0]);
+  fileInput.value = ""; // reset so same file can be re-uploaded
+};
+
+// Drag & drop
+uploadZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  uploadZone.classList.add("drag-over");
+});
+uploadZone.addEventListener("dragleave", () => uploadZone.classList.remove("drag-over"));
+uploadZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove("drag-over");
+  const file = e.dataTransfer.files[0];
+  if (file) handleFileUpload(file);
+});
+
+// ── State helpers ──────────────────────────────────────────
+function setStatus(state, text) {
+  statusDot.className   = "status-dot " + state;
+  statusText.textContent = text;
+  recordBtn.className   =
+    "mic-btn" +
+    (state === "recording"
+      ? " recording"
+      : state === "processing" || state === "speaking"
+        ? " " + state
+        : "");
+  waveform.className = "waveform" + (state === "recording" ? " active" : "");
+  if (state !== "idle") {
+    recordBtn.disabled = state === "processing" || state === "speaking";
+  }
+}
+
+function showToast(msg, type = "error") {
+  let toast = document.querySelector(".toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.background = type === "success" ? "#2e7d32" : "#c62828";
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3500);
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+// ── Chat bubble builder ────────────────────────────────────
+function addBubble(role, text) {
+  if (emptyState) emptyState.style.display = "none";
+
+  const wrap   = document.createElement("div");
+  wrap.className = "chat-bubble " + role;
+
+  const avatar = document.createElement("div");
+  avatar.className = "bubble-avatar";
+  avatar.textContent = role === "user" ? "You" : "AI";
+
+  const body   = document.createElement("div");
+  body.className = "bubble-body";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble-text";
+  bubble.textContent = text;
+
+  const time = document.createElement("div");
+  time.className = "bubble-time";
+  time.textContent = getTime();
+
+  body.appendChild(bubble);
+  body.appendChild(time);
+  wrap.appendChild(avatar);
+  wrap.appendChild(body);
+  conversationArea.appendChild(wrap);
+  conversationArea.scrollTop = conversationArea.scrollHeight;
+  return wrap;
+}
+
+function addThinkingBubble() {
+  if (emptyState) emptyState.style.display = "none";
+
+  const wrap   = document.createElement("div");
+  wrap.className = "chat-bubble ai thinking-bubble";
+
+  const avatar = document.createElement("div");
+  avatar.className = "bubble-avatar";
+  avatar.textContent = "AI";
+
+  const body   = document.createElement("div");
+  body.className = "bubble-body";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble-text";
+  bubble.innerHTML = '<div class="dots"><span></span><span></span><span></span></div>';
+
+  body.appendChild(bubble);
+  wrap.appendChild(avatar);
+  wrap.appendChild(body);
+  conversationArea.appendChild(wrap);
+  conversationArea.scrollTop = conversationArea.scrollHeight;
+  return wrap;
+}
+
+// ── Recording ─────────────────────────────────────────────
 recordBtn.onclick = async () => {
+  if (!docLoaded) { showToast("Upload a PDF first."); return; }
   if (!mediaRecorder || mediaRecorder.state === "inactive") {
-    startRecording();
+    await startRecording();
   } else {
     stopRecording();
   }
 };
 
 async function startRecording() {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      sampleRate: 16000,
-      channelCount: 1,
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
-    },
-  });
-  mediaRecorder = new MediaRecorder(stream);
-  audioChunks = [];
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate: 16000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
 
-  mediaRecorder.ondataavailable = (event) => {
-    audioChunks.push(event.data);
-  };
+    mediaRecorder  = new MediaRecorder(stream);
+    audioChunks    = [];
 
-  mediaRecorder.onstop = sendAudioToBackend;
+    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+    mediaRecorder.onstop = sendAudioToBackend;
+    mediaRecorder.start();
 
-  mediaRecorder.start();
-  recordBtn.innerText = "Stop Recording";
+    setStatus("recording", "Recording…");
+  } catch (err) {
+    showToast("Microphone access denied.");
+    console.error(err);
+  }
 }
 
 function stopRecording() {
   mediaRecorder.stop();
-  recordBtn.innerText = "Start Recording";
+  mediaRecorder.stream.getTracks().forEach((t) => t.stop());
+  setStatus("processing", "Transcribing…");
 }
 
+// ── Send to backend ────────────────────────────────────────
 async function sendAudioToBackend() {
-  const blob = new Blob(audioChunks, { type: "audio/webm" });
-
+  const blob     = new Blob(audioChunks, { type: "audio/webm" });
   const formData = new FormData();
   formData.append("audio", blob);
 
-  const response = await fetch("/voice", {
-    method: "POST",
-    body: formData,
-  });
+  const thinkingEl = addThinkingBubble();
 
-  const audioBlob = await response.blob();
+  try {
+    const response = await fetch("/voice", { method: "POST", body: formData });
 
-  // Play audio
-  const audioURL = URL.createObjectURL(audioBlob);
-  audioPlayer.src = audioURL;
-  audioPlayer.play();
+    if (!response.ok) throw new Error("Server error: " + response.status);
 
-  // Subtitles
-  const transcription = response.headers.get("X-Transcription");
-  const answerText = response.headers.get("X-Response-Text");
+    const transcription = response.headers.get("X-Transcription") || "";
+    const answerText    = response.headers.get("X-Response-Text")  || "";
+    const audioBlob     = await response.blob();
 
-  if (subtitleToggle.checked) {
-    subtitleDiv.innerText = "You: " + transcription;
-    responseDiv.innerText = "AI: " + answerText;
-  } else {
-    subtitleDiv.innerText = "";
-    responseDiv.innerText = "";
+    thinkingEl.remove();
+
+    if (subtitleToggle.checked) {
+      if (transcription) addBubble("user", transcription);
+      if (answerText)    addBubble("ai",   answerText);
+    }
+
+    setStatus("speaking", "Speaking…");
+    const audioURL = URL.createObjectURL(audioBlob);
+    audioPlayer.src = audioURL;
+    audioPlayer.play();
+
+    audioPlayer.onended = () => {
+      setStatus("ready", "Ready");
+      URL.revokeObjectURL(audioURL);
+    };
+  } catch (err) {
+    thinkingEl.remove();
+    showToast("Error: " + err.message);
+    setStatus("ready", "Ready");
+    console.error(err);
   }
 }
+
+// ── Init ──────────────────────────────────────────────────
+(async () => {
+  setStatus("idle", "Checking…");
+  try {
+    const res  = await fetch("/api/document");
+    const data = await res.json();
+    if (data.loaded) {
+      setUploadState("loaded", { filename: "Previous document", pages: "?", chunks: "?" });
+      setStatus("ready", "Ready");
+    } else {
+      setUploadState("idle");
+      setStatus("idle", "No document loaded");
+    }
+  } catch {
+    setUploadState("idle");
+    setStatus("idle", "No document loaded");
+  }
+})();
+const audioPlayer = document.getElementById("audioPlayer");
+const subtitleToggle = document.getElementById("subtitleToggle");
+const conversationArea = document.getElementById("conversationArea");
+const emptyState = document.getElementById("emptyState");
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+const waveform = document.getElementById("waveform");
+
+let mediaRecorder;
+let audioChunks = [];
+
+// ── State helpers ──────────────────────────────────────────
+function setStatus(state, text) {
+  statusDot.className = "status-dot " + state;
+  statusText.textContent = text;
+  recordBtn.className =
+    "mic-btn" +
+    (state === "recording"
+      ? " recording"
+      : state === "processing" || state === "speaking"
+        ? " " + state
+        : "");
+  waveform.className = "waveform" + (state === "recording" ? " active" : "");
+  recordBtn.disabled = state === "processing" || state === "speaking";
+}
+
+function showToast(msg) {
+  let toast = document.querySelector(".toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.className = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), 3500);
+}
+
+function getTime() {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// ── Chat bubble builder ────────────────────────────────────
+function addBubble(role, text) {
+  if (emptyState) emptyState.style.display = "none";
+
+  const wrap = document.createElement("div");
+  wrap.className = "chat-bubble " + role;
+
+  const avatar = document.createElement("div");
+  avatar.className = "bubble-avatar";
+  avatar.textContent = role === "user" ? "You" : "AI";
+
+  const body = document.createElement("div");
+  body.className = "bubble-body";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble-text";
+  bubble.textContent = text;
+
+  const time = document.createElement("div");
+  time.className = "bubble-time";
+  time.textContent = getTime();
+
+  body.appendChild(bubble);
+  body.appendChild(time);
+  wrap.appendChild(avatar);
+  wrap.appendChild(body);
+  conversationArea.appendChild(wrap);
+  conversationArea.scrollTop = conversationArea.scrollHeight;
+  return wrap;
+}
+
+function addThinkingBubble() {
+  if (emptyState) emptyState.style.display = "none";
+  const wrap = document.createElement("div");
+  wrap.className = "chat-bubble ai thinking-bubble";
+
+  const avatar = document.createElement("div");
+  avatar.className = "bubble-avatar";
+  avatar.textContent = "AI";
+
+  const body = document.createElement("div");
+  body.className = "bubble-body";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble-text";
+  bubble.innerHTML =
+    '<div class="dots"><span></span><span></span><span></span></div>';
+
+  body.appendChild(bubble);
+  wrap.appendChild(avatar);
+  wrap.appendChild(body);
+  conversationArea.appendChild(wrap);
+  conversationArea.scrollTop = conversationArea.scrollHeight;
+  return wrap;
+}
+
+// ── Recording ─────────────────────────────────────────────
+recordBtn.onclick = async () => {
+  if (!mediaRecorder || mediaRecorder.state === "inactive") {
+    await startRecording();
+  } else {
+    stopRecording();
+  }
+};
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate: 16000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+    mediaRecorder.onstop = sendAudioToBackend;
+    mediaRecorder.start();
+
+    setStatus("recording", "Recording…");
+  } catch (err) {
+    showToast("Microphone access denied.");
+    console.error(err);
+  }
+}
+
+function stopRecording() {
+  mediaRecorder.stop();
+  mediaRecorder.stream.getTracks().forEach((t) => t.stop());
+  setStatus("processing", "Transcribing…");
+}
+
+// ── Send to backend ────────────────────────────────────────
+async function sendAudioToBackend() {
+  const blob = new Blob(audioChunks, { type: "audio/webm" });
+  const formData = new FormData();
+  formData.append("audio", blob);
+
+  // Show thinking indicator while waiting
+  const thinkingEl = addThinkingBubble();
+
+  try {
+    const response = await fetch("/voice", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Server error: " + response.status);
+    }
+
+    const transcription = response.headers.get("X-Transcription") || "";
+    const answerText = response.headers.get("X-Response-Text") || "";
+    const audioBlob = await response.blob();
+
+    // Remove thinking bubble
+    thinkingEl.remove();
+
+    // Show chat bubbles if subtitle toggle is on
+    if (subtitleToggle.checked) {
+      if (transcription) addBubble("user", transcription);
+      if (answerText) addBubble("ai", answerText);
+    }
+
+    // Play audio
+    setStatus("speaking", "Speaking…");
+    const audioURL = URL.createObjectURL(audioBlob);
+    audioPlayer.src = audioURL;
+    audioPlayer.play();
+
+    audioPlayer.onended = () => {
+      setStatus("ready", "Ready");
+      URL.revokeObjectURL(audioURL);
+    };
+  } catch (err) {
+    thinkingEl.remove();
+    showToast("Error: " + err.message);
+    setStatus("ready", "Ready");
+    console.error(err);
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────
+setStatus("ready", "Ready");
