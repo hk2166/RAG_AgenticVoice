@@ -9,59 +9,33 @@ client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1be
 async def generate_answer(question: str) -> str:
 
     #  Retrieve relevant chunks
-    docs = retrieve(question, k=3)
+    docs = retrieve(question, k=5)
     context = "\n\n".join(d["chunk"] for d in docs)
 
-    print("\n--- RETRIEVED CHUNKS ---")
-    for i, doc in enumerate(docs):
-        print(f"\nChunk {i+1}:\n{doc['chunk'][:300]}")
 
     #  Build grounded prompt
-    prompt = f"""
-You are a document-based assistant.
+    prompt = f"""You are a helpful assistant that answers questions based on a document.
 
-Answer ONLY using the context below.
+Use the context below to answer the question. You may reason, summarize, and synthesize 
+information from the context — do not just quote it verbatim.
 
-When listing projects:
-- Return only project names.
-- Do NOT include links.
-- Do NOT include (Github) or (Demo).
-- Do NOT include URLs.
-- Keep formatting clean and minimal.
-
-If the answer is not in the context, say:
-"I cannot find that information in the document."
+Rules:
+- Base your answer on the context provided.
+- If listing projects, return only project names (no links, no URLs, no "(Github)" or "(Demo)").
+- Keep answers concise and clear.
+- If the context genuinely does not contain enough information to answer, say:
+  "I cannot find that information in the document."
 
 Context:
 {context}
 
-Question:
-{question}
-"""
+Question: {question}
+
+Answer:"""
 
     # Generate response
     response = client.models.generate_content(
         model=LLM_MODEL,
         contents=prompt,
     )
-
-    
     return response.text
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    test_questions = [
-        "Which college is he in??",
-        "Is he into robotics?",
-        "is he a good coder?",
-    ]
-
-    async def main():
-        for question in test_questions:
-            print(f"\nQ. {question}")
-            answer = await generate_answer(question)
-            print(f"ANS:- {answer.strip()}")
-
-    asyncio.run(main())

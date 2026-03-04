@@ -3,7 +3,7 @@ import tempfile
 import os
 
 
-model = WhisperModel("small", compute_type="int8")
+model = WhisperModel("large-v3", compute_type="int8")
 
 
 def transcribe_audio(audio_bytes: bytes) -> str:

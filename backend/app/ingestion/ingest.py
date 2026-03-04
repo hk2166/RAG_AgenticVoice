@@ -85,7 +85,6 @@ def ingest_pdf_bytes(pdf_bytes: bytes, filename: str = "document.pdf") -> dict:
 
 
 if __name__ == "__main__":
-    # Resolve path to data/cv_dev.pdf relative to this file
     base_dir = os.path.dirname(__file__)
     pdf_path = os.path.normpath(os.path.join(base_dir, "..", "..", "data", "data.pdf"))
     ingest_pdf(pdf_path)

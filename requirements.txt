@@ -1,33 +1,16 @@
 # Web framework
 fastapi==0.135.1
 uvicorn==0.41.0
-starlette==0.52.1
 python-multipart==0.0.22
 
-# STT — Speech to Text
+# Speech-to-Text
 faster-whisper==1.2.1
-ctranslate2==4.7.1
-av==16.1.0
-tokenizers==0.22.2
-huggingface_hub==1.5.0
 
-# TTS — Text to Speech
+# Text-to-Speech
 edge-tts==7.2.7
-websockets==16.0
 
-# Gemini / Google AI
+# Gemini SDK
 google-genai==1.65.0
-google-generativeai==0.8.6
-google-ai-generativelanguage==0.6.15
-google-api-core==2.30.0
-google-api-python-client==2.191.0
-google-auth==2.48.0
-google-auth-httplib2==0.3.0
-googleapis-common-protos==1.72.0
-grpcio==1.78.0
-grpcio-status==1.71.2
-proto-plus==1.27.1
-protobuf==5.29.6
 
 # Vector store
 faiss-cpu==1.13.2
@@ -38,32 +21,6 @@ pypdf==6.7.5
 
 # Text splitting
 langchain-text-splitters==1.1.1
-langchain-core==1.2.16
-langsmith==0.7.9
 
-# Environment & config
+# Config / environment
 python-dotenv==1.2.2
-
-# HTTP & networking
-httpx==0.28.1
-httpcore==1.0.9
-requests==2.32.5
-aiohttp==3.13.3
-certifi==2026.2.25
-
-# Utilities
-anyio==4.12.1
-pydantic==2.12.5
-pydantic_core==2.41.5
-tenacity==9.1.4
-tqdm==4.67.3
-typing_extensions==4.15.0
-packaging==26.0
-PyYAML==6.0.3
-
-uritemplate==4.2.0
-urllib3==2.6.3
-uuid_utils==0.14.1
-websockets==16.0
-xxhash==3.6.0
-zstandard==0.25.0
