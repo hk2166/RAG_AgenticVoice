@@ -1,117 +1,111 @@
-# 🎙 Real-Time Voice RAG Agent
+# Real-Time Voice RAG Agent
 
-A functional **Real-Time Voice Retrieval-Augmented Generation (RAG) Agent** built to:
+A **Real-Time Voice RAG Agent** that listens to a spoken question, retrieves relevant context from an uploaded PDF, generates a grounded answer with Gemini, and responds in voice.
 
-- Listen to a spoken question
-- Retrieve relevant context from a knowledge base (PDF)
-- Generate a grounded answer using Gemini
-- Respond back in voice
-
-This project fulfills the assignment requirements for:
-
-- STT (Speech-to-Text)
-- RAG Engine
-- Orchestration Logic
-- TTS (Text-to-Speech)
-- Low latency interaction
+Pipeline: **STT (Faster-Whisper) → FAISS RAG → Gemini LLM → Edge-TTS**
 
 ---
 
-##  Tech Stack
+## Tech Stack
 
-- **FastAPI** – Backend API
-- **Faster-Whisper** – Local Speech-to-Text
-- **Gemini 1.5 Flash** – LLM Reasoning
-- **Gemini Embeddings (`gemini-embedding-001`)** – Vector embeddings
-- **FAISS** – Vector similarity search
-- **Edge-TTS** – Text-to-Speech
-
----
-
-##  Features
-
-| Status | Feature                               |
-| ------ | ------------------------------------- |
-| ✅     | Local Speech-to-Text (Faster-Whisper) |
-| ✅     | Gemini reasoning (1.5 Flash)          |
-| ✅     | Gemini embeddings                     |
-| ✅     | FAISS vector index                    |
-| ✅     | Edge-TTS voice output                 |
-| ✅     | Modular architecture                  |
-| ✅     | Low-latency backend                   |
-| ❌     | Voice cloning (not implemented)       |
-| ❌     | Streaming WebSocket (not implemented) |
+| Layer          | Technology                                      |
+| -------------- | ----------------------------------------------- |
+| Backend API    | FastAPI + Uvicorn                               |
+| Speech-to-Text | Faster-Whisper `large-v3 or medium` (local, int8)         |
+| LLM            | Gemini `models/gemini-2.0-flash`                |
+| Embeddings     | Gemini `models/gemini-embedding-001` (dim 3072) |
+| Vector Store   | FAISS `IndexFlatIP` with L2 normalisation       |
+| Text-to-Speech | Edge-TTS `en-IN-NeerjaNeural`                   |
+| Frontend       | Vanilla HTML / CSS / JS (dark theme)            |
 
 ---
 
-##  Architecture
+## Features
+
+| Status | Feature                                        |
+| ------ | ---------------------------------------------- |
+| ✅     | Local Speech-to-Text (Faster-Whisper large-v3) |
+| ✅     | Gemini 2.0 Flash LLM reasoning                 |
+| ✅     | Gemini embeddings (dim 3072)                   |
+| ✅     | FAISS cosine-similarity vector index           |
+| ✅     | Edge-TTS voice output                          |
+| ✅     | Dynamic PDF upload via `/ingest`               |
+| ✅     | Modular architecture                           |
+| ✅     | Low-latency pipeline                           |
+
+---
+
+## Architecture
 
 ```
-Microphone Input
-       ↓
-Faster-Whisper (STT)
-       ↓
-   Text Query
-       ↓
-FAISS Retrieval (Gemini Embeddings)
-       ↓
-Gemini 1.5 Flash (Grounded Response)
-       ↓
-    Edge-TTS
-       ↓
-Spoken Audio Response
+Microphone Input (browser)
+        ↓
+Faster-Whisper large-v3  (STT — local, int8)
+        ↓
+    Text Query
+        ↓
+Gemini gemini-embedding-001  →  FAISS IndexFlatIP
+        ↓
+Top-5 Context Chunks
+        ↓
+Gemini models/gemini-2.0-flash  (LLM)
+        ↓
+Edge-TTS en-IN-NeerjaNeural  (TTS)
+        ↓
+Spoken Audio Response (browser)
 ```
 
-This matches the required pipeline:
-
-**STT → RAG → Orchestration → TTS**
+Pipeline: **STT → RAG → LLM → TTS**
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 GPU/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py
-│   │   ├── config.py
+│   │   ├── main.py            # FastAPI app, CORS, router registration
+│   │   ├── config.py          # API keys, model names, index paths
 │   │   ├── ingestion/
-│   │   │   └── ingest.py
+│   │   │   └── ingest.py      # PDF → chunks → FAISS index pipeline
 │   │   ├── retrieval/
-│   │   │   └── retrieve.py
+│   │   │   └── retrieve.py    # Query expansion + cosine similarity search
 │   │   ├── llm/
-│   │   │   └── generate.py
+│   │   │   └── generate.py    # Grounded Gemini prompt + generation
 │   │   ├── stt/
-│   │   │   └── whisper_provider.py
+│   │   │   └── whisper_provider.py   # Faster-Whisper transcription
 │   │   ├── tts/
-│   │   │   └── edge_tts_provider.py
+│   │   │   └── edge_tts_provider.py  # Edge-TTS synthesis
 │   │   └── routes/
-│   │       └── voice.py
-│   ├── data/           
-│   └── .env            
+│   │       ├── voice.py       # POST /voice, POST /voice/text
+│   │       └── ingest.py      # POST /ingest, GET /api/document
+│   ├── data/                  # gitignored — place PDFs here
+│   └── .env                   # gitignored — create locally
 ├── frontend/
-├── venv/               
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
+├── venv/                      # gitignored — create locally
 └── README.md
 ```
 
 ---
 
-##  Setup Instructions
+## Setup Instructions
 
 ### 1️⃣ Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd GPU
-pip install -r requirements.txt
 ```
 
 ### 2️⃣ Create Virtual Environment
 
 ```bash
 python -m venv venv
-source venv/bin/activate  
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 > **Note:** The `venv/` folder is gitignored and must be created locally — never commit it.
@@ -120,8 +114,8 @@ source venv/bin/activate
 
 ```bash
 cd backend
-pip install fastapi uvicorn faster-whisper faiss-cpu edge-tts google-generativeai pypdf python-dotenv python-multipart
-
+pip install fastapi uvicorn faster-whisper faiss-cpu edge-tts google-genai\
+            langchain-text-splitters pypdf python-dotenv python-multipart numpy
 ```
 
 ### 4️⃣ Configure Environment Variables
@@ -134,19 +128,18 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 > **Warning:** `.env` is gitignored and must **never** be committed. Keep your API key private.
 
-### 5️⃣ Ingest PDF (Required Before Running)
+### 5️⃣ Ingest Your PDF
 
-Place your PDF file in `backend/data/` and run:
+Place your PDF in `backend/data/` and run the ingestion script once:
 
-```python
-from app.ingestion.ingest import ingest_pdf
-ingest_pdf("data/your_document.pdf")
+```bash
+cd backend
+python -m app.ingestion.ingest
 ```
 
-This generates:
+This builds `faiss.index` and `chunks.pkl` inside `backend/app/`.
 
-- `faiss.index`
-- `chunks.pkl`
+Alternatively, upload a PDF directly through the web UI after starting the server.
 
 ### 6️⃣ Run the Server
 
@@ -155,18 +148,126 @@ cd backend
 uvicorn app.main:app --reload
 ```
 
+Open `http://localhost:8000` in your browser.
+
 ---
 
-##  API Usage
+## API Reference
 
-### Voice Query Endpoint
+### POST `/voice`
 
-**POST** `/voice`
+Upload audio and receive a spoken answer (full end-to-end pipeline).
 
-Upload an audio file to get a spoken response:
+**Form field:** `audio` — audio recording (.webm / .wav)
+
+**Response headers:**
+
+| Header            | Description                     |
+| ----------------- | ------------------------------- |
+| `X-Transcription` | Whisper transcript of the query |
+| `X-Response-Text` | LLM answer text                 |
+
+**Response body:** `audio/mpeg` — synthesised speech
 
 ```bash
-curl -X POST "http://localhost:8000/voice" \
-  -F "audio=@your_audio.wav"
+curl -X POST http://localhost:8000/voice \
+     -F "audio=@query.webm" \
+     --output response.mp3
 ```
 
+---
+
+### POST `/voice/text`
+
+Text-only query — skips STT, returns spoken answer.
+
+```bash
+curl -X POST http://localhost:8000/voice/text \
+     -H "Content-Type: application/json" \
+     -d '{"text": "What projects are listed in the document?"}' \
+     --output response.mp3
+```
+
+---
+
+### POST `/ingest`
+
+Upload a PDF to rebuild the FAISS index at runtime (no server restart needed).
+
+```bash
+curl -X POST http://localhost:8000/ingest \
+     -F "file=@resume.pdf"
+```
+
+**Response:**
+
+```json
+{
+  "status": "success",
+  "filename": "resume.pdf",
+  "pages": 2,
+  "chunks": 47,
+  "dim": 3072
+}
+```
+
+---
+
+### GET `/api/document`
+
+Check whether a FAISS index is currently loaded on disk.
+
+```bash
+curl http://localhost:8000/api/document
+```
+
+**Response:** `{ "loaded": true }`
+
+---
+
+### GET `/api/health`
+
+Health-check endpoint.
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+**Response:** `{ "status": "ok", "message": "Voice RAG Agent is running" }`
+
+---
+
+## Frontend
+
+Served automatically by FastAPI from the `frontend/` directory at `http://localhost:8000`.
+
+| Panel       | Description                                                                    |
+| ----------- | ------------------------------------------------------------------------------ |
+| Upload zone | Drag-and-drop or click to upload a PDF; shows real chunk count after ingestion |
+| Chat area   | Conversation bubbles — your question on the right, agent answer on the left    |
+| Mic footer  | Press the microphone button to record; release to send                         |
+
+---
+
+## Environment Variables
+
+| Variable         | Required | Description              |
+| ---------------- | -------- | ------------------------ |
+| `GEMINI_API_KEY` | Yes      | Google AI Studio API key |
+
+Create `backend/.env`:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+> `.env` is gitignored and must never be committed.
+
+---
+
+## Notes
+
+- The FAISS index is stored at `backend/app/faiss.index` and `backend/app/chunks.pkl`.
+- Uploading a new PDF via `/ingest` or the UI replaces the existing index immediately.
+- Whisper runs locally in `int8` mode — no external STT API is required.
+- Edge-TTS requires an outbound internet connection for synthesis.
