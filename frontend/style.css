@@ -84,7 +84,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  max-width: 760px;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -401,7 +401,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 0 28px;
+  padding: 1px 0 28px;
   gap: 14px;
   flex-shrink: 0;
 }
@@ -621,7 +621,9 @@ body {
   border-radius: 14px;
   border: 1.5px dashed var(--border);
   background: var(--surface);
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
   overflow: hidden;
 }
 .upload-zone.drag-over {
@@ -637,7 +639,10 @@ body {
   padding: 14px 18px;
   color: var(--text-2);
 }
-.upload-idle svg { flex-shrink: 0; color: var(--text-3); }
+.upload-idle svg {
+  flex-shrink: 0;
+  color: var(--text-3);
+}
 .upload-idle-text {
   flex: 1;
   display: flex;
@@ -663,7 +668,10 @@ body {
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
   font-family: var(--font);
 }
 .upload-btn:hover {
@@ -682,6 +690,24 @@ body {
   font-size: 0.85rem;
   font-weight: 500;
 }
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.chunk-badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(124, 109, 240, 0.15);
+  border: 1px solid rgba(124, 109, 240, 0.3);
+  color: var(--accent-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 .spinner {
   width: 18px;
   height: 18px;
@@ -691,7 +717,11 @@ body {
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* loaded */
 .upload-loaded {
@@ -749,7 +779,10 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
   white-space: nowrap;
   font-family: var(--font);
   flex-shrink: 0;
