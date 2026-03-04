@@ -57,41 +57,81 @@
 
         <!-- idle state (no doc loaded) -->
         <div class="upload-idle" id="uploadIdle">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="18" x2="12" y2="12"/>
-            <line x1="9" y1="15" x2="15" y2="15"/>
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+            />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
           </svg>
           <div class="upload-idle-text">
             <span class="upload-title">Drop a PDF or click to upload</span>
-            <span class="upload-sub">Your document will be indexed for voice queries</span>
+            <span class="upload-sub"
+              >Your document will be indexed for voice queries</span
+            >
           </div>
           <button class="upload-btn" id="uploadBtn">Choose PDF</button>
         </div>
 
         <!-- uploading / processing state -->
-        <div class="upload-progress" id="uploadProgress" style="display:none">
+        <div class="upload-progress" id="uploadProgress" style="display: none">
           <div class="spinner"></div>
-          <span id="uploadProgressText">Processing…</span>
+          <div class="progress-info">
+            <span id="uploadProgressText">Processing…</span>
+            <span class="chunk-badge" id="chunkBadge"></span>
+          </div>
         </div>
 
         <!-- loaded state -->
-        <div class="upload-loaded" id="uploadLoaded" style="display:none">
+        <div class="upload-loaded" id="uploadLoaded" style="display: none">
           <div class="doc-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+              />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
           </div>
           <div class="doc-info">
             <span class="doc-name" id="docName">document.pdf</span>
             <span class="doc-meta" id="docMeta"></span>
           </div>
-          <button class="doc-replace-btn" id="replaceBtn" title="Upload a different PDF">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 4 23 10 17 10"/>
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          <button
+            class="doc-replace-btn"
+            id="replaceBtn"
+            title="Upload a different PDF"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
             </svg>
             Replace
           </button>
@@ -170,6 +210,6 @@
     <!-- Hidden audio player -->
     <audio id="audioPlayer" style="display: none"></audio>
 
-    <script src="script.js?v=2"></script>
+    <script src="script.js?v=6"></script>
   </body>
 </html>
