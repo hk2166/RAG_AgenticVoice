@@ -8,15 +8,15 @@ Pipeline: **STT (Faster-Whisper) → FAISS RAG → Gemini LLM → Edge-TTS**
 
 ## Tech Stack
 
-| Layer          | Technology                                      |
-| -------------- | ----------------------------------------------- |
-| Backend API    | FastAPI + Uvicorn                               |
-| Speech-to-Text | Faster-Whisper `large-v3 or medium` (local, int8)         |
-| LLM            | Gemini `models/gemini-2.0-flash`                |
-| Embeddings     | Gemini `models/gemini-embedding-001` (dim 3072) |
-| Vector Store   | FAISS `IndexFlatIP` with L2 normalisation       |
-| Text-to-Speech | Edge-TTS `en-IN-NeerjaNeural`                   |
-| Frontend       | Vanilla HTML / CSS / JS (dark theme)            |
+| Layer          | Technology                                        |
+| -------------- | ------------------------------------------------- |
+| Backend API    | FastAPI + Uvicorn                                 |
+| Speech-to-Text | Faster-Whisper `large-v3 or medium` (local, int8) |
+| LLM            | Gemini `models/gemini-2.0-flash`                  |
+| Embeddings     | Gemini `models/gemini-embedding-001` (dim 3072)   |
+| Vector Store   | FAISS `IndexFlatIP` with L2 normalisation         |
+| Text-to-Speech | Edge-TTS `en-IN-NeerjaNeural`                     |
+| Frontend       | Vanilla HTML / CSS / JS (dark theme)              |
 
 ---
 
@@ -46,7 +46,7 @@ Faster-Whisper large-v3  (STT — local, int8)
         ↓
 Gemini gemini-embedding-001  →  FAISS IndexFlatIP
         ↓
-Top-5 Context Chunks
+Top-12 Context Chunks
         ↓
 Gemini models/gemini-2.0-flash  (LLM)
         ↓
@@ -54,8 +54,6 @@ Edge-TTS en-IN-NeerjaNeural  (TTS)
         ↓
 Spoken Audio Response (browser)
 ```
-
-Pipeline: **STT → RAG → LLM → TTS**
 
 ---
 
@@ -69,6 +67,10 @@ GPU/
 │   │   ├── config.py          # API keys, model names, index paths
 │   │   ├── ingestion/
 │   │   │   └── ingest.py      # PDF → chunks → FAISS index pipeline
+│   │   ├── improved_query/
+│   │   │   └── query_rewrite.py  # LLM-powered query rewriter
+│   │   ├── query_ranker/
+│   │   │   └── rerank.py      # LLM-powered semantic reranker
 │   │   ├── retrieval/
 │   │   │   └── retrieve.py    # Query expansion + cosine similarity search
 │   │   ├── llm/
@@ -179,14 +181,16 @@ curl -X POST http://localhost:8000/voice \
 
 ### POST `/voice/text`
 
-Text-only query — skips STT, returns spoken answer.
+Debug endpoint — same as `/voice` but returns JSON instead of audio.
+
+**Form field:** `audio` — audio recording (.webm / .wav)
 
 ```bash
 curl -X POST http://localhost:8000/voice/text \
-     -H "Content-Type: application/json" \
-     -d '{"text": "What projects are listed in the document?"}' \
-     --output response.mp3
+     -F "audio=@query.webm"
 ```
+
+**Response:** `{ "question": "...", "answer": "..." }`
 
 ---
 
