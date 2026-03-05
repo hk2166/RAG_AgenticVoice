@@ -340,20 +340,6 @@ Check whether a FAISS index is currently loaded on disk.
 curl http://localhost:8000/api/document
 ```
 
-**Response:** `{ "loaded": true }`
-
----
-
-### GET `/api/health`
-
-Health-check endpoint.
-
-```bash
-curl http://localhost:8000/api/health
-```
-
-**Response:** `{ "status": "ok", "message": "Voice RAG Agent is running" }`
-
 ---
 
 ## Frontend

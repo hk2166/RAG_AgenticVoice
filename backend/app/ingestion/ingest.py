@@ -72,6 +72,13 @@ def _save(chunks, embeddings, index):
     with open(CHUNKS_PATH, "wb") as f:
         pickle.dump((chunks, embeddings), f)
 
+    # flush the in-memory retrieval cache so the next query picks up the new index
+    try:
+        from app.retrieval.retrieve import reset_index
+        reset_index()
+    except Exception:
+        pass
+
 
 # ── Public API ─────────────────────────────────────
 
@@ -114,6 +121,28 @@ def ingest_pdf_bytes(pdf_bytes: bytes, filename="document.pdf"):
     return {
         "filename": filename,
         "pages": len(reader.pages),
+        "chunks": len(chunks),
+        "dim": int(embeddings.shape[1])
+    }
+
+
+def ingest_text(text: str, title: str = "pasted text"):
+    """
+    Ingest raw plain text directly — no PDF needed.
+    Runs through the same chunk → embed → FAISS pipeline.
+    """
+    text = _clean_text(text)
+
+    if not text:
+        raise ValueError("Provided text is empty after cleaning.")
+
+    chunks, embeddings, index = _build_index(text)
+
+    _save(chunks, embeddings, index)
+
+    return {
+        "title": title,
+        "characters": len(text),
         "chunks": len(chunks),
         "dim": int(embeddings.shape[1])
     }

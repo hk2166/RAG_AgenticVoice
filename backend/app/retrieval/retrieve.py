@@ -22,6 +22,13 @@ def _load_index():
             _chunks, _ = pickle.load(f)
 
 
+def reset_index():
+    """Force the next retrieve() call to reload index from disk."""
+    global _index, _chunks
+    _index = None
+    _chunks = None
+
+
 def retrieve(query: str, k: int = 12):
 
     _load_index()

@@ -14,29 +14,65 @@ const fileInput = document.getElementById("fileInput");
 const uploadBtn = document.getElementById("uploadBtn");
 const replaceBtn = document.getElementById("replaceBtn");
 const uploadIdle = document.getElementById("uploadIdle");
+const uploadTextIdle = document.getElementById("uploadTextIdle");
 const uploadProgress = document.getElementById("uploadProgress");
 const uploadProgressText = document.getElementById("uploadProgressText");
 const uploadLoaded = document.getElementById("uploadLoaded");
 const docName = document.getElementById("docName");
 const docMeta = document.getElementById("docMeta");
 const chunkBadge = document.getElementById("chunkBadge");
+const ingestTabs = document.getElementById("ingestTabs");
+const textTitle = document.getElementById("textTitle");
+const textContent = document.getElementById("textContent");
+const indexTextBtn = document.getElementById("indexTextBtn");
+const textCharCount = document.getElementById("textCharCount");
+
+const togglePdf = document.getElementById("togglePdf");
+const toggleText = document.getElementById("toggleText");
+const sourceKnob = document.getElementById("sourceKnob");
 
 let mediaRecorder;
 let audioChunks = [];
 let docLoaded = false;
+let activeTab = "pdf";
+
+// ── Pill toggle helpers ───────────────────────────────────
+function positionKnob() {
+  const active = activeTab === "pdf" ? togglePdf : toggleText;
+  sourceKnob.style.width = active.offsetWidth + "px";
+  sourceKnob.style.transform = `translateX(${active.offsetLeft - 3}px)`;
+}
+// Run once after layout so the knob starts in the right place
+requestAnimationFrame(positionKnob);
+window.addEventListener("resize", positionKnob);
 
 // ── Upload zone ───────────────────────────────────────────
 
 function setUploadState(state, info = {}) {
-  uploadIdle.style.display = state === "idle" ? "flex" : "none";
+  uploadIdle.style.display = "none";
+  uploadTextIdle.style.display = "none";
   uploadProgress.style.display = state === "progress" ? "flex" : "none";
   uploadLoaded.style.display = state === "loaded" ? "flex" : "none";
+  ingestTabs.style.display = state === "loaded" ? "none" : "flex";
+
+  if (state === "idle") {
+    // show correct idle panel based on active tab
+    if (activeTab === "pdf") {
+      uploadIdle.style.display = "flex";
+    } else {
+      uploadTextIdle.style.display = "flex";
+    }
+  }
 
   uploadZone.classList.toggle("loaded", state === "loaded");
 
   if (state === "loaded") {
-    docName.textContent = info.filename || "document.pdf";
-    docMeta.textContent = `${info.pages ?? "?"} pages · ${info.chunks ?? "?"} chunks indexed`;
+    docName.textContent = info.filename || info.title || "document";
+    if (info.pages) {
+      docMeta.textContent = `${info.pages} pages · ${info.chunks ?? "?"} chunks indexed`;
+    } else {
+      docMeta.textContent = `${info.characters ? info.characters.toLocaleString() + " chars · " : ""}${info.chunks ?? "?"} chunks indexed`;
+    }
     docLoaded = true;
   } else {
     docLoaded = false;
@@ -46,7 +82,7 @@ function setUploadState(state, info = {}) {
   recordBtn.disabled = !docLoaded;
   document.getElementById("micHint").textContent = docLoaded
     ? "Click to start recording"
-    : "Upload a PDF document first";
+    : "Upload a PDF or paste text first";
 }
 
 async function handleFileUpload(file) {
@@ -93,11 +129,77 @@ async function handleFileUpload(file) {
 
 // Click to pick file
 uploadBtn.onclick = () => fileInput.click();
-replaceBtn.onclick = () => fileInput.click();
+replaceBtn.onclick = () => {
+  setUploadState("idle");
+  if (activeTab === "pdf") fileInput.click();
+};
 fileInput.onchange = () => {
   if (fileInput.files[0]) handleFileUpload(fileInput.files[0]);
   fileInput.value = ""; // reset so same file can be re-uploaded
 };
+
+// ── Toggle switching ──────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  togglePdf.classList.toggle("active", tab === "pdf");
+  toggleText.classList.toggle("active", tab === "text");
+  positionKnob();
+  uploadIdle.style.display = tab === "pdf" ? "flex" : "none";
+  uploadTextIdle.style.display = tab === "text" ? "flex" : "none";
+}
+togglePdf.onclick = () => switchTab("pdf");
+toggleText.onclick = () => switchTab("text");
+
+// ── Text char counter ──────────────────────────────────────
+textContent.oninput = () => {
+  const n = textContent.value.length;
+  textCharCount.textContent =
+    n.toLocaleString() + " character" + (n !== 1 ? "s" : "");
+};
+
+// ── Text ingestion ─────────────────────────────────────────
+async function handleTextIngest() {
+  const content = textContent.value.trim();
+  const title = textTitle.value.trim() || "Pasted Text";
+
+  if (!content) {
+    showToast("Please paste some text first.");
+    return;
+  }
+  if (content.length < 50) {
+    showToast("Text is too short (minimum 50 characters).");
+    return;
+  }
+
+  setUploadState("progress");
+  const estimatedChunks = Math.max(1, Math.ceil(content.length / 350));
+  chunkBadge.textContent = `~${estimatedChunks} chunks`;
+  uploadProgressText.textContent =
+    estimatedChunks < 50
+      ? "Processing… (~30s)"
+      : estimatedChunks < 100
+        ? "Processing… (~60s)"
+        : "Processing… (~90s)";
+
+  try {
+    const res = await fetch("/ingest/text", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: content, title }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Ingestion failed");
+    chunkBadge.textContent = `${data.chunks} chunks`;
+    setUploadState("loaded", data);
+    showToast("✓ Text indexed successfully!", "success");
+  } catch (err) {
+    setUploadState("idle");
+    showToast("Error: " + err.message);
+    console.error(err);
+  }
+}
+
+indexTextBtn.onclick = handleTextIngest;
 
 // Drag & drop
 uploadZone.addEventListener("dragover", (e) => {
