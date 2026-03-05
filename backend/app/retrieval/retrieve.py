@@ -4,37 +4,57 @@ import numpy as np
 from google import genai
 
 from app.config import GEMINI_API_KEY, FAISS_INDEX_PATH, CHUNKS_PATH
+from app.improved_query.query_rewrite import rewrite_query
+from app.query_ranker.rerank import rerank
 
-client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1beta"})
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+# Lazy-loaded globals — populated on first call to retrieve()
+_index = None
+_chunks = None
 
 
-def expand_query(query: str) -> str:
-    if len(query.split()) < 5:
-        return f"In the document, {query}"
-    return query
+def _load_index():
+    global _index, _chunks
+    if _index is None:
+        _index = faiss.read_index(FAISS_INDEX_PATH)
+        with open(CHUNKS_PATH, "rb") as f:
+            _chunks, _ = pickle.load(f)
 
 
-def retrieve(query: str, k: int = 3) -> list[dict]:
+def retrieve(query: str, k: int = 12):
 
-    query = expand_query(query)
+    _load_index()
 
-    index = faiss.read_index(FAISS_INDEX_PATH)
+    # rewrite vague queries
+    query = rewrite_query(query)
 
-    with open(CHUNKS_PATH, "rb") as f:
-        chunks = pickle.load(f)
-
-    # Embed and normalize query vector (required for IndexFlatIP cosine similarity)
     response = client.models.embed_content(
         model="models/gemini-embedding-001",
-        contents=query,
+        contents=query
     )
-    query_vector = np.array([response.embeddings[0].values], dtype="float32")
+
+    query_vector = np.array(
+        [response.embeddings[0].values],
+        dtype="float32"
+    )
+
     faiss.normalize_L2(query_vector)
 
-    # Search — IndexFlatIP scores are cosine similarities (higher = better)
-    scores, indices = index.search(query_vector, k)
+    scores, indices = _index.search(query_vector, k)
 
-    return [
-        {"chunk": chunks[i], "distance": float(scores[0][j])}
-        for j, i in enumerate(indices[0])
-    ]
+    results = []
+
+    for j, i in enumerate(indices[0]):
+
+        if i != -1 and i < len(_chunks):
+
+            results.append({
+                "chunk": _chunks[i],
+                "score": float(scores[0][j])
+            })
+
+    # semantic rerank
+    results = rerank(query, results)
+
+    return results
