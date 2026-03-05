@@ -37,22 +37,60 @@ Pipeline: **STT (Faster-Whisper) → FAISS RAG → Gemini LLM → Edge-TTS**
 
 ## Architecture
 
-```
-Microphone Input (browser)
-        ↓
-Faster-Whisper large-v3  (STT — local, int8)
-        ↓
-    Text Query
-        ↓
-Gemini gemini-embedding-001  →  FAISS IndexFlatIP
-        ↓
-Top-12 Context Chunks
-        ↓
-Gemini models/gemini-2.0-flash  (LLM)
-        ↓
-Edge-TTS en-IN-NeerjaNeural  (TTS)
-        ↓
-Spoken Audio Response (browser)
+```mermaid
+flowchart TD
+    A([🎤 Browser Microphone]) --> B[MediaRecorder\nCaptures audio as .webm]
+    B --> C[POST /voice\nmultipart audio upload]
+
+    subgraph STT ["🗣️ Speech-to-Text  |  whisper_provider.py"]
+        C --> D[Write to temp .webm file]
+        D --> E[Faster-Whisper large-v3\nlanguage=en · beam_size=5 · VAD filter · int8]
+        E --> F[Raw Transcript Text]
+    end
+
+    subgraph QR ["✏️ Query Rewriting  |  improved_query/query_rewrite.py"]
+        F --> G[Gemini Flash LLM\nExpand vague voice queries\ninto precise document search queries]
+        G --> H[Cleaned Search Query]
+    end
+
+    subgraph RAG ["🔍 Retrieval  |  retrieval/retrieve.py"]
+        H --> I[Gemini Embedding API\nmodels/gemini-embedding-001\ndim = 3072]
+        I --> J[L2-Normalise query vector]
+        J --> K[FAISS IndexFlatIP\nCosine similarity search\nTop-12 chunks]
+        K --> L[12 Candidate Chunks\n+ similarity scores]
+    end
+
+    subgraph RR ["🏆 Reranking  |  query_ranker/rerank.py"]
+        L --> M[Gemini Flash LLM\nRe-order 12 chunks\nby true relevance to query]
+        M --> N[Top Reranked Chunks]
+    end
+
+    subgraph LLM ["🤖 Answer Generation  |  llm/generate.py"]
+        N --> O[Build RAG Prompt\nsystem persona + context + question]
+        O --> P[Gemini models/gemini-2.0-flash\nGrounded answer generation]
+        P --> Q[Answer Text\nconcise · conversational]
+    end
+
+    subgraph TTS ["🔊 Text-to-Speech  |  tts/edge_tts_provider.py"]
+        Q --> R[Edge-TTS\nen-IN-NeerjaNeural\nMicrosoft Neural Voice]
+        R --> S[MP3 Audio Bytes]
+    end
+
+    subgraph RESP ["📡 HTTP Response"]
+        S --> T[Response body: audio/mpeg\nX-Transcription header\nX-Response-Text header]
+    end
+
+    T --> U([🌐 Browser\nPlays MP3 · Shows chat bubbles])
+
+    subgraph INGEST ["📄 PDF Ingestion  |  ingestion/ingest.py  — runs once per document"]
+        V([📁 PDF Upload / File]) --> W[pypdf — extract text\nnormalise whitespace]
+        W --> X[LangChain RecursiveCharacterTextSplitter\nchunk_size=350 · overlap=60]
+        X --> Y[Gemini Embedding API\nembed each chunk]
+        Y --> Z[L2-Normalise · build FAISS IndexFlatIP]
+        Z --> AA[(faiss.index + chunks.pkl\npersisted to disk)]
+    end
+
+    AA -.->|loaded on first query| K
 ```
 
 ---
