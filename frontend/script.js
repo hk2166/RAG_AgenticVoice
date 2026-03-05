@@ -397,24 +397,8 @@ async function sendAudioToBackend() {
 }
 
 // ── Init ──────────────────────────────────────────────────
-(async () => {
-  setStatus("idle", "Checking…");
-  try {
-    const res = await fetch("/api/document");
-    const data = await res.json();
-    if (data.loaded) {
-      setUploadState("loaded", {
-        filename: "Previous document",
-        pages: "?",
-        chunks: "?",
-      });
-      setStatus("ready", "Ready");
-    } else {
-      setUploadState("idle");
-      setStatus("idle", "No document loaded");
-    }
-  } catch {
-    setUploadState("idle");
-    setStatus("idle", "No document loaded");
-  }
+// Always ask the user to choose a data source — never reuse a previous session's index.
+(() => {
+  setUploadState("idle");
+  setStatus("idle", "Choose a data source to begin");
 })();
