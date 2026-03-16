@@ -368,8 +368,8 @@ async function sendAudioToBackend() {
 
     if (!response.ok) throw new Error("Server error: " + response.status);
 
-    const transcription = response.headers.get("X-Transcription") || "";
-    const answerText = response.headers.get("X-Response-Text") || "";
+    const transcription = decodeURIComponent(response.headers.get("X-Transcription") || "");
+    const answerText = decodeURIComponent(response.headers.get("X-Response-Text") || "");
     const audioBlob = await response.blob();
 
     thinkingEl.remove();
