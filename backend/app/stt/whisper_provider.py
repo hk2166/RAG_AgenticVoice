@@ -1,41 +1,31 @@
-from faster_whisper import WhisperModel
-import tempfile
-import os
+from google import genai
+from google.genai import types
 
+from app.config import GEMINI_API_KEY, LLM_MODEL
 
-model = WhisperModel("large-v3", compute_type="int8")
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+_TRANSCRIPTION_PROMPT = (
+    "Transcribe the following audio exactly as spoken. "
+    "Output ONLY the transcription text — no timestamps, no labels, "
+    "no extra commentary. If the audio is silent or unintelligible, "
+    "return an empty string."
+)
 
 
 def transcribe_audio(audio_bytes: bytes) -> str:
+    """Transcribe audio bytes using Gemini's native audio understanding."""
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as tmp:
-        tmp.write(audio_bytes)
-        tmp_path = tmp.name
+    response = client.models.generate_content(
+        model=LLM_MODEL,
+        contents=[
+            types.Part.from_bytes(data=audio_bytes, mime_type="audio/webm"),
+            _TRANSCRIPTION_PROMPT,
+        ],
+    )
 
-    try:
-        segments, info = model.transcribe(
-            tmp_path,
-            language="en",           # skip language detection
-            beam_size=5,             # beam search for better accuracy
-            vad_filter=True,         # remove silence / non-speech
-            vad_parameters={
-                "min_silence_duration_ms": 500,
-                "speech_pad_ms": 200,
-            },
-            temperature=0,           # deterministic, no random sampling
-            condition_on_previous_text=True,
-            word_timestamps=False,
-        )
+    text = response.text.strip()
 
-        text = "".join(segment.text for segment in segments)
-    finally:
-        # Always clean up the temp file, even if transcription raises
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
+    print(f"[STT] Transcript (Gemini): {text}")
 
-    print(f"[STT] Detected language: {info.language} (confidence: {info.language_probability:.2f})")
-    print(f"[STT] Transcript: {text.strip()}")
-
-    return text.strip()
+    return text
