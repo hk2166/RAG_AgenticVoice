@@ -2,8 +2,9 @@ import os
 from google import genai
 from google.genai import types
 import requests
+from app.config import GEMINI_API_KEY
 
-client = genai.Client()
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def transcribe_audio(audio_bytes: bytes) -> str:
     """Transcribe audio using Gemini 2.5 Flash, fallback to Groq Whisper."""
