@@ -19,6 +19,8 @@ async def run_in_thread(func, *args, **kwargs):
     return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
 
 
+_conversation_history = []
+
 async def generate_answer(question: str) -> str:
     """
     Full RAG step:
@@ -26,16 +28,26 @@ async def generate_answer(question: str) -> str:
       2. Compose a prompt with the retrieved context
       3. Call Gemini (with Google Search enabled) and return the answer text
     """
+    global _conversation_history
+
     # Retrieval is blocking (FAISS + HTTP) — run in a thread
     docs = await run_in_thread(retrieve, question)
 
     context = "\n\n".join(d["chunk"] for d in docs)
 
+    # Format recent history (last 3 turns / 6 messages)
+    history_text = ""
+    if _conversation_history:
+        history_text = "Recent Conversation History:\n"
+        for role, text in _conversation_history:
+            history_text += f"{role.capitalize()}: {text}\n"
+        history_text += "\n"
+
     # Note: Using `types.GenerateContentConfig` handles system instructions cleanly.
     prompt = f"""Context from document:
 {context}
 
-User question: {question}
+{history_text}User question: {question}
 
 Answer:"""
     
@@ -50,4 +62,11 @@ Answer:"""
         )
     )
 
-    return response.text.strip() if response.text else "I couldn't find an answer to that."
+    answer = response.text.strip() if response.text else "I couldn't find an answer to that."
+    
+    # Save to history and truncate to the last 3 turns (6 interactions)
+    _conversation_history.append(("user", question))
+    _conversation_history.append(("assistant", answer))
+    _conversation_history = _conversation_history[-6:]
+
+    return answer
