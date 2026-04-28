@@ -6,6 +6,15 @@ const sendBtn = document.getElementById("sendBtn");
 const audioPlayer = document.getElementById("audioPlayer");
 const ttsToggle = document.getElementById("ttsToggle");
 const conversationArea = document.getElementById("conversationArea");
+
+// Immediately stop audio if toggled off mid-speech
+ttsToggle.addEventListener("change", () => {
+  if (!ttsToggle.checked && audioPlayer && !audioPlayer.paused) {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+    setStatus("ready", "Ready (Muted)");
+  }
+});
 const emptyState = document.getElementById("emptyState");
 const statusDot = document.getElementById("statusDot");
 const statusText = document.getElementById("statusText");
