@@ -7,7 +7,7 @@ python-multipart
 edge-tts
 
 # Speech-to-Text
-openai-whisper
+requests
 
 # Gemini SDK (latest version for Python 3.10+)
 google-generativeai>=0.8.0
