@@ -7,7 +7,7 @@ from app.config import GEMINI_API_KEY, FAISS_INDEX_PATH, CHUNKS_PATH
 from app.improved_query.query_rewrite import rewrite_query
 from app.query_ranker.rerank import rerank
 
-client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1beta"})
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Lazy-loaded globals — populated on first call to retrieve()
 _index = None
@@ -36,13 +36,13 @@ def retrieve(query: str, k: int = 12):
     # rewrite vague queries
     query = rewrite_query(query)
 
-    response = client.models.embed_content(
-        model="models/gemini-embedding-001",
+    result = client.models.embed_content(
+        model="gemini-embedding-2",
         contents=query
     )
 
     query_vector = np.array(
-        [response.embeddings[0].values],
+        [result.embeddings[0].values],
         dtype="float32"
     )
 

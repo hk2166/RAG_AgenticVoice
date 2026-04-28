@@ -9,7 +9,7 @@ from google import genai
 
 from app.config import GEMINI_API_KEY, FAISS_INDEX_PATH, CHUNKS_PATH
 
-client = genai.Client(api_key=GEMINI_API_KEY, http_options={"api_version": "v1beta"})
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 # ── Helpers ─────────────────────────────────────────
@@ -41,12 +41,12 @@ def _build_index(text: str):
 
     for i, chunk in enumerate(chunks):
 
-        response = client.models.embed_content(
-            model="models/gemini-embedding-001",
+        result = client.models.embed_content(
+            model="gemini-embedding-2",
             contents=chunk
         )
 
-        embeddings.append(response.embeddings[0].values)
+        embeddings.append(result.embeddings[0].values)
 
         print(f"      Embedded {i+1}/{len(chunks)}", end="\r")
 

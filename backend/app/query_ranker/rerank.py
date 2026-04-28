@@ -1,10 +1,11 @@
 from google import genai
+from typing import List, Dict
 from app.config import GEMINI_API_KEY, LLM_MODEL
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-def rerank(query: str, results: list[dict]) -> list[dict]:
+def rerank(query: str, results: List[Dict]) -> List[Dict]:
     """
     Rerank retrieved chunks by relevance to the query using the LLM.
 
@@ -35,6 +36,7 @@ Ranked indices (most to least relevant):"""
             model=LLM_MODEL,
             contents=prompt
         )
+        
         ranked_indices = [
             int(idx.strip())
             for idx in response.text.strip().split(",")

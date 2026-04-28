@@ -1,5 +1,6 @@
 import asyncio
 import os
+from functools import wraps
 
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import JSONResponse
@@ -9,6 +10,13 @@ from app.ingestion.ingest import ingest_pdf_bytes, ingest_text
 from app.config import FAISS_INDEX_PATH, CHUNKS_PATH
 
 router = APIRouter()
+
+
+# Python 3.8 compatibility: asyncio.to_thread was added in 3.9
+async def run_in_thread(func, *args, **kwargs):
+    """Run a blocking function in a thread pool executor."""
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
 
 
 @router.post("/ingest")
@@ -31,7 +39,7 @@ async def ingest_document(file: UploadFile = File(...)):
         )
 
     # Run blocking pipeline in a thread so the event loop stays free
-    result = await asyncio.to_thread(ingest_pdf_bytes, pdf_bytes, file.filename)
+    result = await run_in_thread(ingest_pdf_bytes, pdf_bytes, file.filename)
     return {"status": "success", **result}
 
 
@@ -58,7 +66,7 @@ async def ingest_text_document(body: TextIngestRequest):
             content={"error": "Text is too short to index (minimum 50 characters)."},
         )
 
-    result = await asyncio.to_thread(ingest_text, body.text, body.title)
+    result = await run_in_thread(ingest_text, body.text, body.title)
     return {"status": "success", **result}
 
 

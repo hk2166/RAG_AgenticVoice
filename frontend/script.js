@@ -1,7 +1,10 @@
 // ── DOM refs ──────────────────────────────────────────────
 const recordBtn = document.getElementById("recordBtn");
+const chatForm = document.getElementById("chatForm");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
 const audioPlayer = document.getElementById("audioPlayer");
-const subtitleToggle = document.getElementById("subtitleToggle");
+const ttsToggle = document.getElementById("ttsToggle");
 const conversationArea = document.getElementById("conversationArea");
 const emptyState = document.getElementById("emptyState");
 const statusDot = document.getElementById("statusDot");
@@ -80,9 +83,13 @@ function setUploadState(state, info = {}) {
 
   // Enable mic only when a doc is loaded
   recordBtn.disabled = !docLoaded;
-  document.getElementById("micHint").textContent = docLoaded
-    ? "Click to start recording"
-    : "Upload a PDF or paste text first";
+  chatInput.disabled = !docLoaded;
+  sendBtn.disabled = !docLoaded;
+  if (docLoaded) {
+    chatInput.placeholder = "Type a message (or use the mic)...";
+  } else {
+    chatInput.placeholder = "Upload a PDF or paste text to chat...";
+  }
 }
 
 async function handleFileUpload(file) {
@@ -220,16 +227,21 @@ uploadZone.addEventListener("drop", (e) => {
 function setStatus(state, text) {
   statusDot.className = "status-dot " + state;
   statusText.textContent = text;
-  recordBtn.className =
-    "mic-btn" +
-    (state === "recording"
-      ? " recording"
-      : state === "processing" || state === "speaking"
-        ? " " + state
-        : "");
-  waveform.className = "waveform" + (state === "recording" ? " active" : "");
+
+  if (state === "recording") {
+    recordBtn.classList.add("recording");
+    recordBtn.querySelector(".waveform").classList.add("active");
+  } else {
+    recordBtn.classList.remove("recording");
+    recordBtn.querySelector(".waveform").classList.remove("active");
+  }
+
   if (state !== "idle") {
+    const isBusy =
+      state === "processing" || state === "speaking" || state === "recording";
     recordBtn.disabled = state === "processing" || state === "speaking";
+    chatInput.disabled = isBusy;
+    sendBtn.disabled = isBusy || !chatInput.value.trim();
   }
 }
 
@@ -355,41 +367,87 @@ function stopRecording() {
   setStatus("processing", "Transcribing…");
 }
 
-// ── Send to backend ────────────────────────────────────────
-async function sendAudioToBackend() {
-  const blob = new Blob(audioChunks, { type: "audio/webm" });
-  const formData = new FormData();
-  formData.append("audio", blob);
+chatInput.addEventListener("input", () => {
+  if (
+    docLoaded &&
+    statusText.textContent !== "Recording…" &&
+    statusText.textContent !== "Transcribing…" &&
+    statusText.textContent !== "Speaking…"
+  ) {
+    sendBtn.disabled = !chatInput.value.trim();
+  }
+});
 
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!docLoaded) return;
+
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+
+  chatInput.value = "";
+  sendBtn.disabled = true;
+
+  addBubble("user", msg);
   const thinkingEl = addThinkingBubble();
+  setStatus("processing", "Thinking…");
 
   try {
-    const response = await fetch("/voice", { method: "POST", body: formData });
+    const isTtsEnabled = ttsToggle.checked;
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg, tts: isTtsEnabled }),
+    });
+    const data = await res.json();
 
-    if (!response.ok) throw new Error("Server error: " + response.status);
-
-    const transcription = decodeURIComponent(response.headers.get("X-Transcription") || "");
-    const answerText = decodeURIComponent(response.headers.get("X-Response-Text") || "");
-    const audioBlob = await response.blob();
+    if (!res.ok) throw new Error(data.error || "Failed to get answer");
 
     thinkingEl.remove();
+    addBubble("ai", data.answer);
 
-    if (subtitleToggle.checked) {
-      if (transcription) addBubble("user", transcription);
-      if (answerText) addBubble("ai", answerText);
-    }
-
-    setStatus("speaking", "Speaking…");
-    const audioURL = URL.createObjectURL(audioBlob);
-    audioPlayer.src = audioURL;
-    audioPlayer.play();
-
-    audioPlayer.onended = () => {
+    if (isTtsEnabled && data.audio_base64) {
+      setStatus("speaking", "Speaking…");
+      const audioBlob = await (
+        await fetch(`data:audio/mp3;base64,${data.audio_base64}`)
+      ).blob();
+      const audioURL = URL.createObjectURL(audioBlob);
+      audioPlayer.src = audioURL;
+      audioPlayer.play();
+      audioPlayer.onended = () => {
+        setStatus("ready", "Ready");
+        URL.revokeObjectURL(audioURL);
+      };
+    } else {
       setStatus("ready", "Ready");
-      URL.revokeObjectURL(audioURL);
-    };
+    }
   } catch (err) {
     thinkingEl.remove();
+    showToast("Error: " + err.message);
+    setStatus("ready", "Ready");
+  }
+});
+
+// ── Send to backend ────────────────────────────────────────
+async function sendAudioToBackend() {
+  const formData = new FormData();
+  const blob = new Blob(audioChunks, { type: "audio/webm" });
+  formData.append("audio", blob);
+
+  setStatus("processing", "Transcribing…");
+
+  try {
+    const res = await fetch("/voice/text", { method: "POST", body: formData });
+    if (!res.ok) throw new Error("Transcribe failed: " + res.status);
+    const data = await res.json();
+
+    // Pipe the transcribed text into the chat flow manually for visual feedback
+    chatInput.value = data.question;
+    sendBtn.disabled = false;
+
+    // Auto-submit the transcribed text
+    chatForm.dispatchEvent(new Event("submit"));
+  } catch (err) {
     showToast("Error: " + err.message);
     setStatus("ready", "Ready");
     console.error(err);
