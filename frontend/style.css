@@ -35,6 +35,7 @@
 html,
 body {
   height: 100%;
+  height: 100dvh;
   font-family: var(--font);
   background: var(--bg);
   color: var(--text-1);
@@ -90,6 +91,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh;
   max-width: 900px; /* Limit width for nicer chat look */
   margin: 0 auto;
   padding: 0 20px;
@@ -213,7 +215,7 @@ body {
   justify-content: center;
   gap: 16px;
   color: var(--text-3);
-  padding: 60px 20px;
+  padding: 40px 20px;
 }
 .empty-icon {
   width: 90px;
@@ -415,6 +417,7 @@ body {
   display: flex;
   justify-content: center;
   padding: 12px 10px 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
   width: 100%;
 }
