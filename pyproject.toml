@@ -1,2 +1,21 @@
+[project]
+name = "rag-agentic-voice"
+version = "1.0.0"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "python-multipart",
+    "edge-tts",
+    "requests",
+    "google-generativeai>=0.8.0",
+    "google-genai>=0.1.0",
+    "faiss-cpu",
+    "numpy",
+    "pypdf",
+    "langchain-text-splitters",
+    "python-dotenv",
+]
+
 [tool.vercel]
 entrypoint = "backend.app.main:app"
