@@ -8,7 +8,6 @@ dependencies = [
     "python-multipart",
     "edge-tts",
     "requests",
-    "google-generativeai>=0.8.0",
     "google-genai>=0.1.0",
     "faiss-cpu",
     "numpy",
