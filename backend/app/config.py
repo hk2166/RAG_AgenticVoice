@@ -1,8 +1,4 @@
 import os
-
-# Workaround for macOS duplicate OpenMP runtime error (libomp.dylib)
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
 from dotenv import load_dotenv
 
 load_dotenv()
