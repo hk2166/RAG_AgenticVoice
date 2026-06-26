@@ -1,14 +1,13 @@
 import asyncio
-from google import genai
-from google.genai import types
+import anthropic
 
-from app.config import GEMINI_API_KEY, LLM_MODEL
+from app.config import ANTHROPIC_API_KEY, LLM_MODEL
 from app.retrieval.retrieve import retrieve
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-_SYSTEM_PROMPT = """You are a helpful voice assistant. Make use of the provided document context to answer questions. 
-If the provided context does not contain the answer or is not sufficient to answer the question, clearly state before answering: "That information is outside the provided document, but here is what I found:" and use your Google Search tool to find the most up-to-date information online to complete the answer. 
+_SYSTEM_PROMPT = """You are a helpful voice assistant. Make use of the provided document context to answer questions.
+If the provided context does not contain the answer or is not sufficient to answer the question, clearly state before answering: "That information is outside the provided document, but here is what I know:" and answer from your training knowledge.
 Keep answers concise and conversational since they will be read aloud."""
 
 
@@ -26,11 +25,11 @@ async def generate_answer(question: str) -> str:
     Full RAG step:
       1. Retrieve relevant chunks for `question`
       2. Compose a prompt with the retrieved context
-      3. Call Gemini (with Google Search enabled) and return the answer text
+      3. Call Claude and return the answer text
     """
     global _conversation_history
 
-    # Retrieval is blocking (FAISS + HTTP) — run in a thread
+    # Retrieval is blocking (FAISS + local embeddings) — run in a thread
     docs = await run_in_thread(retrieve, question)
 
     context = "\n\n".join(d["chunk"] for d in docs)
@@ -43,27 +42,25 @@ async def generate_answer(question: str) -> str:
             history_text += f"{role.capitalize()}: {text}\n"
         history_text += "\n"
 
-    # Note: Using `types.GenerateContentConfig` handles system instructions cleanly.
     prompt = f"""Context from document:
 {context}
 
 {history_text}User question: {question}
 
 Answer:"""
-    
-    response = await run_in_thread(
-        client.models.generate_content,
-        model=LLM_MODEL,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=_SYSTEM_PROMPT,
-            tools=[{"google_search": {}}],
-            temperature=0.3
-        )
-    )
 
-    answer = response.text.strip() if response.text else "I couldn't find an answer to that."
-    
+    def _call():
+        return client.messages.create(
+            model=LLM_MODEL,
+            max_tokens=1024,
+            system=_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+    response = await run_in_thread(_call)
+
+    answer = response.content[0].text.strip() if response.content else "I couldn't find an answer to that."
+
     # Save to history and truncate to the last 3 turns (6 interactions)
     _conversation_history.append(("user", question))
     _conversation_history.append(("assistant", answer))

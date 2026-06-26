@@ -5,11 +5,9 @@ import pickle
 import numpy as np
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from google import genai
 
-from app.config import GEMINI_API_KEY, FAISS_INDEX_PATH, CHUNKS_PATH
-
-client = genai.Client(api_key=GEMINI_API_KEY)
+from app.config import FAISS_INDEX_PATH, CHUNKS_PATH
+from app.embeddings import embed_text
 
 
 # ── Helpers ─────────────────────────────────────────
@@ -41,12 +39,7 @@ def _build_index(text: str):
 
     for i, chunk in enumerate(chunks):
 
-        result = client.models.embed_content(
-            model="gemini-embedding-2",
-            contents=chunk
-        )
-
-        embeddings.append(result.embeddings[0].values)
+        embeddings.append(embed_text(chunk))
 
         print(f"      Embedded {i+1}/{len(chunks)}", end="\r")
 

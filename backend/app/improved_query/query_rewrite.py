@@ -1,7 +1,7 @@
-from google import genai
-from app.config import GEMINI_API_KEY, LLM_MODEL
+import anthropic
+from app.config import ANTHROPIC_API_KEY, LLM_MODEL
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 def rewrite_query(query: str) -> str:
@@ -9,8 +9,7 @@ def rewrite_query(query: str) -> str:
     Rewrite vague user queries into clear document-search queries.
     """
 
-    prompt = f"""
-Rewrite the user's question so it becomes a clear search query
+    prompt = f"""Rewrite the user's question so it becomes a clear search query
 for retrieving information from a document.
 
 Rules:
@@ -29,12 +28,12 @@ Search Query: explain the traffic management project in the document
 User Question:
 {query}
 
-Search Query:
-"""
+Search Query:"""
 
-    response = client.models.generate_content(
+    response = client.messages.create(
         model=LLM_MODEL,
-        contents=prompt
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
     )
 
-    return response.text.strip()
+    return response.content[0].text.strip()

@@ -1,13 +1,11 @@
 import faiss
 import pickle
 import numpy as np
-from google import genai
 
-from app.config import GEMINI_API_KEY, FAISS_INDEX_PATH, CHUNKS_PATH
+from app.config import FAISS_INDEX_PATH, CHUNKS_PATH
+from app.embeddings import embed_text
 from app.improved_query.query_rewrite import rewrite_query
 from app.query_ranker.rerank import rerank
-
-client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Lazy-loaded globals — populated on first call to retrieve()
 _index = None
@@ -36,15 +34,7 @@ def retrieve(query: str, k: int = 12):
     # rewrite vague queries
     query = rewrite_query(query)
 
-    result = client.models.embed_content(
-        model="gemini-embedding-2",
-        contents=query
-    )
-
-    query_vector = np.array(
-        [result.embeddings[0].values],
-        dtype="float32"
-    )
+    query_vector = np.array([embed_text(query)], dtype="float32")
 
     faiss.normalize_L2(query_vector)
 

@@ -7,10 +7,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-# Latest Gemini models (google-genai 1.x)
-EMBEDDING_MODEL = "gemini-embedding-2"
-LLM_MODEL = "gemini-2.5-flash"
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # used by STT (Gemini audio transcription)
+LLM_MODEL = "claude-opus-4-8"
 
 # Absolute paths — always resolved relative to this file, regardless of CWD
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))

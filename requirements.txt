@@ -8,10 +8,13 @@ edge-tts
 
 # Speech-to-Text
 requests
-
-# Gemini SDK (latest version for Python 3.10+)
-google-generativeai>=0.8.0
 google-genai>=0.1.0
+
+# Anthropic Claude SDK
+anthropic>=0.40.0
+
+# Embeddings (local, no API key required)
+sentence-transformers>=3.0.0
 
 # Vector store
 faiss-cpu

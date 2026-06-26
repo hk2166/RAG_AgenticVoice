@@ -1,8 +1,8 @@
-from google import genai
+import anthropic
 from typing import List, Dict
-from app.config import GEMINI_API_KEY, LLM_MODEL
+from app.config import ANTHROPIC_API_KEY, LLM_MODEL
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
 def rerank(query: str, results: List[Dict]) -> List[Dict]:
@@ -20,7 +20,7 @@ def rerank(query: str, results: List[Dict]) -> List[Dict]:
         f"[{i}] {r['chunk']}" for i, r in enumerate(results)
     )
 
-    prompt = f"""You are a relevance ranker. Given a user query and a list of text chunks, 
+    prompt = f"""You are a relevance ranker. Given a user query and a list of text chunks,
 return a comma-separated list of the chunk indices sorted from most to least relevant.
 Output ONLY the comma-separated indices — no explanation, no extra text.
 
@@ -32,14 +32,15 @@ Chunks:
 Ranked indices (most to least relevant):"""
 
     try:
-        response = client.models.generate_content(
+        response = client.messages.create(
             model=LLM_MODEL,
-            contents=prompt
+            max_tokens=128,
+            messages=[{"role": "user", "content": prompt}]
         )
-        
+
         ranked_indices = [
             int(idx.strip())
-            for idx in response.text.strip().split(",")
+            for idx in response.content[0].text.strip().split(",")
             if idx.strip().isdigit()
         ]
         # Keep only valid indices and append any missing ones at the end
